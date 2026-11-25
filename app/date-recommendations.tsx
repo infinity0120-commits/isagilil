@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUp, ArrowUpRight, Check, ChevronDown, Compass, Copy, Crown, LockKeyhole, MapPin, MessageCircle, Sparkles, X } from 'lucide-react'
+import { ArrowUp, ArrowUpRight, Check, ChevronDown, Compass, Crown, LockKeyhole, MapPin, MessageCircle, Sparkles } from 'lucide-react'
 import styles from './date-recommendations.module.css'
 
 type FamilyMember = { id: number; role: string; birth: string; calendar: string; gender: string }
@@ -30,7 +30,17 @@ declare global {
 
 const KAKAO_JS_KEY = '8ba4e34fd1b680821ee31c54ae69cc8a'
 const SHARE_LINK = 'https://isagilil.vercel.app'
+const SHARE_TITLE = '🔮 [이사길일연구소] 우리 가족 2026년 이사 길일 분석표'
+const SHARE_TEXT = '우리 가족 맞춤 대길일 분석 완료! 피해야 할 흉일과 이사비용 절약 팁을 확인해보세요.'
+const KAKAO_SHARE_DESCRIPTION = '1순위 대길일 분석 완료! 가족 사주 조화와 피해야 할 흉일을 카톡에서 바로 확인해보세요.'
 const SHARE_IMAGE = 'https://isagilil.vercel.app/placeholder.jpg'
+
+function buildKakaoShareText(props: Props, analysis: ReturnType<typeof buildDateAnalysis>): string {
+  const top = analysis.recommendations[0]
+  const month = Number(props.month)
+  const dateLine = top ? `1순위 대길일: ${month}월 ${top.day}일 (${weekdayNames[top.weekday]})` : `${month}월 추천 날짜`
+  return [SHARE_TEXT, dateLine, `이사 방향: ${props.direction === '좌표 확인 필요' ? '확인 필요' : props.direction}`, `분석 보기: ${SHARE_LINK}`].join('\n')
+}
 
 const branches = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해']
 const koreanBranchByChinese: Record<string, string> = { 子: '자', 丑: '축', 寅: '인', 卯: '묘', 辰: '진', 巳: '사', 午: '오', 未: '미', 申: '신', 酉: '유', 戌: '술', 亥: '해' }
@@ -154,11 +164,10 @@ function buildWarningReason(day: ReturnType<typeof buildDateAnalysis>['warnings'
 
 export default function DateRecommendations(props: Props) {
   const [isUnlocked, setIsUnlocked] = useState(false)
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
-  const [shareCopied, setShareCopied] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'info' | 'success'>('info')
   const analysis = useMemo(() => buildDateAnalysis(props), [props])
-  const shareMessage = `우리 가족 이사 날짜 맞춤 분석 결과를 확인해 보세요. ${props.year}년 ${monthNames[Number(props.month) - 1]} 추천 날짜와 방향 분석이 있어요. ${typeof window === 'undefined' ? '' : window.location.href}`
+  const kakaoShareText = useMemo(() => buildKakaoShareText(props, analysis), [props, analysis])
 
   const calculationKey = `${props.year}-${props.month}-${props.origin}-${props.destination}-${props.members.map((member) => `${member.id}:${member.birth}:${member.calendar}`).join('|')}`
 
@@ -183,72 +192,77 @@ export default function DateRecommendations(props: Props) {
     return () => { window.clearInterval(interval); window.clearTimeout(timeout) }
   }, [])
 
-  useEffect(() => {
-    if (!toastMessage) return
-    const timeout = window.setTimeout(() => setToastMessage(''), 3800)
-    return () => window.clearTimeout(timeout)
-  }, [toastMessage])
+  const showToast = (message: string, type: 'info' | 'success' = 'info') => {
+    setToastType(type)
+    setToastMessage(message)
+  }
 
   useEffect(() => {
-    if (!isShareModalOpen) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsShareModalOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isShareModalOpen])
+    if (!toastMessage) return
+    const timeout = window.setTimeout(() => setToastMessage(''), 4200)
+    return () => window.clearTimeout(timeout)
+  }, [toastMessage])
 
   const unlockReport = () => {
     setIsUnlocked(true)
     try {
       window.localStorage.setItem('moving-lab-report-unlocked', 'true')
     } catch {
-      setToastMessage('잠금이 해제되었어요. 새로고침하면 다시 잠길 수 있습니다.')
-      return
+      // Storage is optional; the report unlocks in component state.
     }
-    setToastMessage('잠금이 해제되었습니다! 전체 리포트를 확인하세요.')
   }
 
-  const shareWithKakao = () => {
-    if (typeof window === 'undefined' || !window.Kakao) {
-      setToastMessage('카카오톡을 불러오는 중이에요. 잠시 후 다시 눌러 주세요.')
-      return
-    }
-    if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
+  const fallbackClipboardUnlock = async () => {
     try {
-      window.Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: '🔮 [이사길일연구소] 우리 가족 2026년 이사 길일 분석표',
-          description: '1순위 대길일 분석 완료! 가족 사주 조화와 피해야 할 흉일을 카톡에서 바로 확인해보세요.',
-          imageUrl: SHARE_IMAGE,
-          link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK },
-        },
-        buttons: [{ title: '이사 길일 분석 보기', link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK } }],
-      })
-      unlockReport()
+      await navigator.clipboard.writeText(kakaoShareText)
     } catch {
-      setToastMessage('카카오톡 공유를 열 수 없어요. 모바일 카카오톡 앱이 설치되어 있는지 확인해 주세요.')
+      // Clipboard API can fail on insecure origins; proceed to unlock regardless.
     }
+    unlockReport()
+    showToast('✅ 가족 단톡방에 보낼 추천 날짜가 복사되었습니다! 카톡에 붙여넣어 공유해보세요. (리포트 잠금 해제됨)', 'success')
   }
 
-  const shareOrOpenCopy = () => {
-    shareWithKakao()
-  }
-
-  const copyAndUnlock = async () => {
-    try {
-      await navigator.clipboard.writeText(shareMessage)
-      setShareCopied(true)
-      unlockReport()
-      setIsShareModalOpen(false)
-    } catch {
-      setToastMessage('복사 권한을 사용할 수 없어요. 메시지를 선택해 직접 복사해 주세요.')
+  const shareWithKakao = async () => {
+    // 1) Mobile: prefer native Web Share API to avoid any Kakao domain popup errors.
+    const supportsNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+    if (supportsNativeShare) {
+      try {
+        await navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: SHARE_LINK })
+        unlockReport()
+        return
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        // Native share failed for another reason — fall through to Kakao SDK.
+      }
     }
+
+    // 2) Try Kakao SDK (PC + mobile where native share is unavailable).
+    if (typeof window !== 'undefined' && window.Kakao) {
+      try {
+        if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: SHARE_TITLE,
+            description: KAKAO_SHARE_DESCRIPTION,
+            imageUrl: SHARE_IMAGE,
+            link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK },
+          },
+          buttons: [{ title: '이사 길일 분석 보기', link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK } }],
+        })
+        unlockReport()
+        return
+      } catch {
+        // Kakao SDK failed (4019 domain auth, blocked popup, etc.) — fail-safe below.
+      }
+    }
+
+    // 3) Fail-safe: copy summary to clipboard, unlock, show success toast.
+    await fallbackClipboardUnlock()
   }
 
   return <section className={styles.recommendations} aria-label="추천 날짜 상세 분석">
-    <div className={styles.sectionHeading}><div><span className={styles.overline}>FAMILY DATE REPORT</span><h3>우리 가족 맞춤 추천 날짜</h3><p>양·음력 날짜와 가족 생년 띠, 이동 방향을 기준으로 살펴봤어요.</p></div><div className={styles.headingActions}><span className={styles.methodBadge}>간이 참고 점수</span><button type="button" className={styles.testLockButton} aria-pressed={!isUnlocked} onClick={() => setIsUnlocked((unlocked) => !unlocked)}>[🔒 테스트용: 다시 잠그기]</button></div></div>
+    <div className={styles.sectionHeading}><div><span className={styles.overline}>FAMILY DATE REPORT</span><h3>우리 가족 맞춤 추천 날짜</h3><p>양·음력 날짜와 가족 생년 띠, 이동 방향을 기준으로 살펴봤어요.</p></div><div className={styles.headingActions}><span className={styles.methodBadge}>간이 참고 점수</span></div></div>
     <div className={styles.cards}>
       {analysis.recommendations.map((day, index) => {
         const weekday = weekdayNames[day.weekday]
@@ -282,7 +296,7 @@ export default function DateRecommendations(props: Props) {
                 })}</div>
               </details>
             </div>
-            {!isUnlocked && <div className={styles.cardUnlockOverlay}><button type="button" className={styles.cardUnlockButton} onClick={shareOrOpenCopy}><MessageCircle size={17} />카카오톡 공유하고 상세 분석 보기</button></div>}
+            {!isUnlocked && <div className={styles.cardUnlockOverlay}><button type="button" className={styles.cardUnlockButton} onClick={shareWithKakao}><MessageCircle size={17} />카카오톡 공유하고 상세 분석 보기</button></div>}
           </div>
         </article>
       })}
@@ -290,7 +304,7 @@ export default function DateRecommendations(props: Props) {
 
     {!isUnlocked && <div className={styles.unlockArea}>
       <div className={styles.blurredPreview} aria-hidden="true"><span>가족별 일진 궁합 · 길일 풀이 · 이동 방향 세부 분석</span><span>흉일 캘린더 · 비용 절약 메모</span></div>
-      <div className={styles.unlockBanner}><span className={styles.lockIcon}><LockKeyhole size={22} /></span><div className={styles.unlockCopy}><h4>우리 가족 맞춤 상세 사주 풀이 &amp; 흉일 캘린더</h4><p>공유 메뉴에서 카카오톡을 선택할 수 있어요. PC에서는 공유 문구를 복사해 가족에게 보내면 상세 풀이를 무료로 확인할 수 있습니다.</p></div><button type="button" onClick={shareOrOpenCopy} className={styles.shareButton}><MessageCircle size={18} />카카오톡으로 가족에게 공유하고 무료 확인하기<ArrowUpRight size={16} /></button></div>
+      <div className={styles.unlockBanner}><span className={styles.lockIcon}><LockKeyhole size={22} /></span><div className={styles.unlockCopy}><h4>우리 가족 맞춤 상세 사주 풀이 &amp; 흉일 캘린더</h4><p>카카오톡으로 가족에게 공유하면 상세 풀이를 무료로 확인할 수 있어요. 모바일에서는 기기 공유 창이, PC에서는 안전한 복사 방식으로 작동해요.</p></div><button type="button" onClick={shareWithKakao} className={styles.shareButton}><MessageCircle size={18} />카카오톡으로 가족에게 공유하고 무료 확인하기<ArrowUpRight size={16} /></button></div>
     </div>}
 
     {isUnlocked && <div className={styles.unlockedNotice} role="status"><Check size={17} /> 상세 리포트가 열렸어요. 가족별 분석과 주의 날짜를 확인해 보세요.</div>}
@@ -302,8 +316,7 @@ export default function DateRecommendations(props: Props) {
 
     {isUnlocked && <div className={styles.adPlaceholder} aria-label="광고 배너 자리"><span>광고</span><b>AdSense 배너 자리</b><small>광고가 연결되면 이 영역에 표시됩니다.</small></div>}
 
-    {isShareModalOpen && <div className={styles.modalBackdrop} role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setIsShareModalOpen(false) }}><section className={styles.shareModal} role="dialog" aria-modal="true" aria-labelledby="share-modal-title"><button type="button" className={styles.closeButton} aria-label="공유 안내 닫기" onClick={() => setIsShareModalOpen(false)}><X size={18} /></button><span className={styles.modalIcon}><MessageCircle size={23} /></span><h3 id="share-modal-title">가족에게 공유할 메시지</h3><p className={styles.modalDescription}>아래 문구를 복사해 카카오톡 대화창에 붙여넣으면 결과를 함께 볼 수 있어요.</p><div className={styles.kakaoBubble}><span>이사길일연구소</span><p>{shareMessage.replace(typeof window === 'undefined' ? '' : window.location.href, '').trim()}</p><small>결과 링크를 함께 보낼 수 있어요</small></div>{shareCopied && <p className={styles.copySuccess} role="status"><Check size={15} /> 문구를 복사했어요. 카카오톡에 붙여넣어 보내 주세요.</p>}<button type="button" className={styles.copyButton} autoFocus onClick={copyAndUnlock}><Copy size={17} />공유 문구 복사하고 무료로 열기</button><button type="button" className={styles.modalCancel} onClick={() => setIsShareModalOpen(false)}>나중에 할게요</button></section></div>}
-    {toastMessage && <div className={styles.toast} role="status" aria-live="polite"><Sparkles size={16} />{toastMessage}</div>}
+    {toastMessage && <div className={`${styles.toast} ${toastType === 'success' ? styles.toastSuccess : ''}`} role="status" aria-live="polite">{toastType === 'success' ? <Check size={16} /> : <Sparkles size={16} />}{toastMessage}</div>}
     <p className={styles.methodNote}><MapPin size={13} /> 손없는날은 음력일 끝자리 9·0으로 계산하고, 방향은 지역 대표 좌표와 해당 연도 방위 기준을 적용해요. 점수는 간이 참고용이며 정통 생기·복덕 택일이나 과학적 예측을 대신하지 않습니다. 가족 정보는 저장하지 않으며, 새 분석을 시작하면 리포트가 다시 잠깁니다.</p>
   </section>
 }
