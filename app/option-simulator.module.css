@@ -1,0 +1,826 @@
+.calculator {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 24px;
+  color: #1c2940;
+}
+
+.intro {
+  padding: 4px 2px 8px;
+}
+
+.eyebrow {
+  color: #318463;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.05px;
+}
+
+.intro h2 {
+  margin: 7px 0 5px;
+  color: #1e2f52;
+  font-size: clamp(22px, 3.2vw, 30px);
+  letter-spacing: -1px;
+}
+
+.intro p,
+.cardTitle p {
+  margin: 0;
+  color: #738096;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.optionCard {
+  overflow: hidden;
+  border: 1px solid #e5eaf2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 7px 24px rgb(35 56 91 / 4%);
+}
+
+.cardHeader,
+.simpleHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 16px 19px;
+}
+
+.cardHeader {
+  border-bottom: 1px solid #edf0f5;
+}
+
+.cardIcon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #eff4ff;
+  color: #3159ae;
+}
+
+.cardIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.cardTitle {
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitle h3 {
+  margin: 0 0 3px;
+  color: #223451;
+  font-size: 15px;
+  letter-spacing: -.35px;
+}
+
+.cardTitle p {
+  font-size: 10px;
+}
+
+.switchControl {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  color: #68768c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.switchControl input {
+  position: absolute;
+  width: 42px;
+  height: 26px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switchTrack {
+  display: inline-flex;
+  width: 40px;
+  height: 23px;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid #dbe2ed;
+  border-radius: 99px;
+  background: #e9edf3;
+  transition: background .18s ease, border-color .18s ease;
+}
+
+.switchTrack span {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(23 43 77 / 20%);
+  transition: transform .18s ease;
+}
+
+.switchControl input:checked + .switchTrack {
+  border-color: #2e6dbe;
+  background: #2e6dbe;
+}
+
+.switchControl input:checked + .switchTrack span {
+  transform: translateX(17px);
+}
+
+.switchControl input:focus-visible + .switchTrack {
+  outline: 3px solid #9db7f0;
+  outline-offset: 2px;
+}
+
+.cardBody {
+  display: grid;
+  gap: 16px;
+  padding: 18px 19px 20px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field,
+.choiceField {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field > span,
+.choiceField legend,
+.sliderField label {
+  color: #43536c;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e0e6ef;
+  border-radius: 9px;
+  outline: none;
+  background: #fbfcfe;
+  color: #2e3d57;
+  font-size: 12px;
+}
+
+.field select:focus-visible {
+  border-color: #7999df;
+  box-shadow: 0 0 0 3px rgb(121 153 223 / 15%);
+}
+
+.choiceField legend {
+  margin-bottom: 8px;
+}
+
+.segmented,
+.wallChoices,
+.providerChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.segmented label,
+.wallChoice,
+.providerChoices label {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fbfcfe;
+  color: #627087;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+
+.segmented label {
+  flex: 1;
+  padding: 0 10px;
+}
+
+.segmented input,
+.wallChoice input,
+.providerChoices input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.segmented label:has(input:checked),
+.wallChoice:has(input:checked),
+.providerChoices label:has(input:checked) {
+  border-color: #8ba8e7;
+  background: #f1f5ff;
+  color: #244b9d;
+}
+
+.segmented label:focus-within,
+.wallChoice:focus-within,
+.providerChoices label:focus-within {
+  outline: 3px solid #a9bdf0;
+  outline-offset: 2px;
+}
+
+.wallChoice {
+  min-height: 39px;
+  padding: 0 11px;
+}
+
+.providerChoices label {
+  flex: 1;
+  justify-content: flex-start;
+  gap: 9px;
+  min-height: 58px;
+  padding: 8px 11px;
+}
+
+.providerChoices label::before {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 1px solid #c8d1e1;
+  border-radius: 50%;
+  background: #fff;
+  content: '';
+}
+
+.providerChoices label:has(input:checked)::before {
+  border: 4px solid #3f66bc;
+}
+
+.providerChoices label span {
+  display: grid;
+  gap: 3px;
+}
+
+.providerChoices b {
+  color: #304260;
+  font-size: 11px;
+}
+
+.providerChoices small {
+  color: #78869b;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.checkOption {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid #e9edf3;
+  border-radius: 10px;
+  background: #fcfdff;
+  color: #4c5c73;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.checkOption input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.checkOption:focus-within {
+  outline: 3px solid #a9bdf0;
+  outline-offset: 2px;
+}
+
+.checkMark {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #cbd4e1;
+  border-radius: 5px;
+  background: #fff;
+  color: transparent;
+}
+
+.checkMark svg {
+  width: 12px;
+  height: 12px;
+}
+
+.checkOption input:checked + .checkMark {
+  border-color: #2f6dbb;
+  background: #2f6dbb;
+  color: #fff;
+}
+
+.checkOption > span:nth-of-type(2) {
+  flex: 1;
+}
+
+.checkOption b {
+  margin-left: auto;
+  color: #3159a5;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.priceLines {
+  display: grid;
+  gap: 0;
+  padding: 2px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.priceLine {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #f0f2f6;
+  color: #627087;
+  font-size: 10px;
+}
+
+.priceLine > span {
+  display: grid;
+  gap: 2px;
+}
+
+.priceLine small {
+  color: #8894a7;
+  font-size: 9px;
+}
+
+.priceLine b {
+  color: #354a6b;
+  font-size: 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.subtotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  background: #f2f6ff;
+  color: #384e72;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subtotal b {
+  color: #244b9d;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.infoCallout,
+.tipCallout {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.infoCallout {
+  border: 1px solid #d9e7ff;
+  background: #f3f7ff;
+  color: #47618f;
+}
+
+.infoCallout svg,
+.tipCallout svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.infoCallout p,
+.tipCallout p {
+  margin: 0;
+}
+
+.sliderField {
+  display: grid;
+  gap: 8px;
+}
+
+.sliderField > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sliderField output {
+  color: #3159a5;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sliderField input[type='range'] {
+  width: 100%;
+  accent-color: #315fbd;
+}
+
+.rangeEnds {
+  display: flex;
+  justify-content: space-between;
+  color: #8994a6;
+  font-size: 9px;
+}
+
+.comparisonWrap {
+  overflow: hidden;
+  border: 1px solid #e8edf4;
+  border-radius: 11px;
+}
+
+.comparisonWrap h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 11px 12px;
+  background: #f7f9fc;
+  color: #344968;
+  font-size: 11px;
+}
+
+.comparisonWrap h4 svg {
+  width: 15px;
+  height: 15px;
+  color: #4770c1;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.comparisonTable {
+  width: 100%;
+  min-width: 400px;
+  border-collapse: collapse;
+  font-size: 9px;
+  text-align: right;
+}
+
+.comparisonTable th,
+.comparisonTable td {
+  padding: 8px 10px;
+  border-top: 1px solid #edf0f5;
+}
+
+.comparisonTable thead th {
+  background: #fff;
+  color: #6b7890;
+  font-weight: 700;
+}
+
+.comparisonTable thead th:first-child,
+.comparisonTable tbody th {
+  text-align: left;
+}
+
+.comparisonTable tbody th {
+  color: #68768b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.comparisonTable td {
+  color: #50617b;
+  white-space: nowrap;
+}
+
+.comparisonTable .selectedCell {
+  background: #f3f7ff;
+  color: #234a99;
+  font-weight: 800;
+}
+
+.comparisonTable .tableTotal th,
+.comparisonTable .tableTotal td {
+  border-top: 1px solid #dfe6f1;
+  color: #263f73;
+  font-weight: 800;
+}
+
+.tipCallout {
+  border: 1px solid #f2d778;
+  background: #fff8dc;
+  color: #6d5717;
+}
+
+.tipCallout svg {
+  color: #b4870a;
+}
+
+.tipCallout strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #7b5d00;
+}
+
+.stickySummary {
+  position: sticky;
+  z-index: 4;
+  bottom: 10px;
+  display: grid;
+  gap: 9px;
+  padding: 15px 17px 12px;
+  border: 1px solid #d7e2f4;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 12px 34px rgb(24 45 82 / 16%);
+  backdrop-filter: blur(12px);
+}
+
+.summaryTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summaryIcon {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  background: #1e3a8a;
+  color: #fff;
+}
+
+.summaryIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.summaryTop > div {
+  display: grid;
+  gap: 3px;
+}
+
+.summaryLabel {
+  color: #697991;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.summaryTop strong {
+  color: #1e3a8a;
+  font-size: clamp(15px, 2.6vw, 21px);
+  letter-spacing: -.5px;
+}
+
+.summaryEquation {
+  margin: 0;
+  color: #5f6d82;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.summaryRows {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.summaryRows > span {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 3px 5px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: #f5f7fb;
+  color: #66748a;
+  font-size: 9px;
+}
+
+.summaryRows svg {
+  width: 12px;
+  height: 12px;
+  color: #6c80a5;
+}
+
+.summaryRows b {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #344b70;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disclaimer {
+  color: #8993a3;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+@media (max-width: 650px) {
+  .calculator {
+    gap: 11px;
+    margin: 12px 0 20px;
+  }
+
+  .optionCard {
+    border-radius: 13px;
+  }
+
+  .cardHeader,
+  .simpleHeader {
+    gap: 9px;
+    min-height: 70px;
+    padding: 13px 12px;
+  }
+
+  .cardIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .cardIcon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .cardTitle h3 {
+    font-size: 13px;
+  }
+
+  .cardTitle p {
+    max-width: 170px;
+    font-size: 9px;
+  }
+
+  .switchControl {
+    gap: 6px;
+    font-size: 9px;
+  }
+
+  .switchTrack {
+    width: 36px;
+    height: 21px;
+  }
+
+  .switchControl input {
+    width: 38px;
+    height: 25px;
+  }
+
+  .switchControl input:checked + .switchTrack span {
+    transform: translateX(13px);
+  }
+
+  .cardBody {
+    gap: 13px;
+    padding: 14px 12px 15px;
+  }
+
+  .fieldGrid {
+    gap: 8px;
+  }
+
+  .field select {
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .wallChoices {
+    gap: 6px;
+  }
+
+  .wallChoice {
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .checkboxGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .checkOption {
+    min-height: 40px;
+    gap: 7px;
+    padding: 7px 8px;
+    font-size: 9px;
+  }
+
+  .checkOption b {
+    font-size: 9px;
+  }
+
+  .priceLine {
+    min-height: 33px;
+    font-size: 9px;
+  }
+
+  .subtotal {
+    padding: 11px;
+    font-size: 10px;
+  }
+
+  .subtotal b {
+    font-size: 13px;
+  }
+
+  .stickySummary {
+    bottom: 74px;
+    gap: 7px;
+    padding: 12px 11px 10px;
+    border-radius: 13px;
+  }
+
+  .summaryTop {
+    gap: 8px;
+  }
+
+  .summaryIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .summaryTop strong {
+    font-size: 15px;
+  }
+
+  .summaryEquation {
+    font-size: 9px;
+  }
+
+  .summaryRows {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .summaryRows > span {
+    padding: 6px;
+    font-size: 8px;
+  }
+
+  .summaryRows b {
+    font-size: 8px;
+  }
+
+  .disclaimer {
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switchTrack,
+  .switchTrack span,
+  .segmented label,
+  .wallChoice,
+  .providerChoices label {
+    transition: none;
+  }
+}
