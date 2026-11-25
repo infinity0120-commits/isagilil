@@ -11,6 +11,27 @@ type SolarDate = { getLunar: () => LunarDay }
 type CalendarApi = { Solar: { fromYmd: (year: number, month: number, day: number) => SolarDate }; Lunar: { fromYmd: (year: number, month: number, day: number) => LunarDay } }
 const { Solar, Lunar } = require('lunar-javascript') as CalendarApi
 
+declare global {
+  interface Window {
+    Kakao?: {
+      isInitialized: () => boolean
+      init: (key: string) => void
+      Share: {
+        sendDefault: (params: {
+          objectType: string
+          itemContent?: { text: string; image?: { src: string; width: number; height: number } }
+          content: { title: string; description: string; imageUrl: string; link: { webUrl?: string; mobileWebUrl?: string } }
+          buttons: { title: string; link: { webUrl?: string; mobileWebUrl?: string } }[]
+        }) => void
+      }
+    }
+  }
+}
+
+const KAKAO_JS_KEY = '8ba4e34fd1b680821ee31c54ae69cc8a'
+const SHARE_LINK = 'https://isagilil.vercel.app'
+const SHARE_IMAGE = 'https://isagilil.vercel.app/placeholder.jpg'
+
 const branches = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해']
 const koreanBranchByChinese: Record<string, string> = { 子: '자', 丑: '축', 寅: '인', 卯: '묘', 辰: '진', 巳: '사', 午: '오', 未: '미', 申: '신', 酉: '유', 戌: '술', 亥: '해' }
 const zodiacByBranch: Record<string, string> = { 자: '쥐', 축: '소', 인: '호랑이', 묘: '토끼', 진: '용', 사: '뱀', 오: '말', 미: '양', 신: '원숭이', 유: '닭', 술: '개', 해: '돼지' }
@@ -151,6 +172,18 @@ export default function DateRecommendations(props: Props) {
   }, [calculationKey])
 
   useEffect(() => {
+    const ensureKakao = () => {
+      if (typeof window === 'undefined' || !window.Kakao) return false
+      if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
+      return true
+    }
+    if (ensureKakao()) return
+    const interval = window.setInterval(() => { if (ensureKakao()) window.clearInterval(interval) }, 300)
+    const timeout = window.setTimeout(() => window.clearInterval(interval), 6000)
+    return () => { window.clearInterval(interval); window.clearTimeout(timeout) }
+  }, [])
+
+  useEffect(() => {
     if (!toastMessage) return
     const timeout = window.setTimeout(() => setToastMessage(''), 3800)
     return () => window.clearTimeout(timeout)
@@ -176,19 +209,31 @@ export default function DateRecommendations(props: Props) {
     setToastMessage('잠금이 해제되었습니다! 전체 리포트를 확인하세요.')
   }
 
-  const shareOrOpenCopy = async () => {
-    const supportsNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function' && window.matchMedia('(pointer: coarse)').matches
-    if (supportsNativeShare) {
-      try {
-        await navigator.share({ title: '우리 가족 이사 날짜 분석', text: shareMessage })
-        unlockReport()
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return
-        setIsShareModalOpen(true)
-      }
+  const shareWithKakao = () => {
+    if (typeof window === 'undefined' || !window.Kakao) {
+      setToastMessage('카카오톡을 불러오는 중이에요. 잠시 후 다시 눌러 주세요.')
       return
     }
-    setIsShareModalOpen(true)
+    if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
+    try {
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: '🔮 [이사길일연구소] 우리 가족 2026년 이사 길일 분석표',
+          description: '1순위 대길일 분석 완료! 가족 사주 조화와 피해야 할 흉일을 카톡에서 바로 확인해보세요.',
+          imageUrl: SHARE_IMAGE,
+          link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK },
+        },
+        buttons: [{ title: '이사 길일 분석 보기', link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK } }],
+      })
+      unlockReport()
+    } catch {
+      setToastMessage('카카오톡 공유를 열 수 없어요. 모바일 카카오톡 앱이 설치되어 있는지 확인해 주세요.')
+    }
+  }
+
+  const shareOrOpenCopy = () => {
+    shareWithKakao()
   }
 
   const copyAndUnlock = async () => {
