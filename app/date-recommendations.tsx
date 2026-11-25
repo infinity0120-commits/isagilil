@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowUp, ArrowUpRight, Check, ChevronDown, Compass, Crown, LockKeyhole, MapPin, MessageCircle, Sparkles } from 'lucide-react'
+import { useMemo } from 'react'
+import { ArrowUp, Check, ChevronDown, Compass, Crown, MapPin } from 'lucide-react'
 import styles from './date-recommendations.module.css'
 
 type FamilyMember = { id: number; role: string; birth: string; calendar: string; gender: string }
@@ -10,37 +10,6 @@ type LunarDay = { getDay: () => number; getDayZhi: () => string; getYear: () => 
 type SolarDate = { getLunar: () => LunarDay }
 type CalendarApi = { Solar: { fromYmd: (year: number, month: number, day: number) => SolarDate }; Lunar: { fromYmd: (year: number, month: number, day: number) => LunarDay } }
 const { Solar, Lunar } = require('lunar-javascript') as CalendarApi
-
-declare global {
-  interface Window {
-    Kakao?: {
-      isInitialized: () => boolean
-      init: (key: string) => void
-      Share: {
-        sendDefault: (params: {
-          objectType: string
-          itemContent?: { text: string; image?: { src: string; width: number; height: number } }
-          content: { title: string; description: string; imageUrl: string; link: { webUrl?: string; mobileWebUrl?: string } }
-          buttons: { title: string; link: { webUrl?: string; mobileWebUrl?: string } }[]
-        }) => void
-      }
-    }
-  }
-}
-
-const KAKAO_JS_KEY = '8ba4e34fd1b680821ee31c54ae69cc8a'
-const SHARE_LINK = 'https://isagilil.vercel.app'
-const SHARE_TITLE = '🔮 [이사길일연구소] 우리 가족 2026년 이사 길일 분석표'
-const SHARE_TEXT = '우리 가족 맞춤 대길일 분석 완료! 피해야 할 흉일과 이사비용 절약 팁을 확인해보세요.'
-const KAKAO_SHARE_DESCRIPTION = '1순위 대길일 분석 완료! 가족 사주 조화와 피해야 할 흉일을 카톡에서 바로 확인해보세요.'
-const SHARE_IMAGE = 'https://isagilil.vercel.app/placeholder.jpg'
-
-function buildKakaoShareText(props: Props, analysis: ReturnType<typeof buildDateAnalysis>): string {
-  const top = analysis.recommendations[0]
-  const month = Number(props.month)
-  const dateLine = top ? `1순위 대길일: ${month}월 ${top.day}일 (${weekdayNames[top.weekday]})` : `${month}월 추천 날짜`
-  return [SHARE_TEXT, dateLine, `이사 방향: ${props.direction === '좌표 확인 필요' ? '확인 필요' : props.direction}`, `분석 보기: ${SHARE_LINK}`].join('\n')
-}
 
 const branches = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해']
 const koreanBranchByChinese: Record<string, string> = { 子: '자', 丑: '축', 寅: '인', 卯: '묘', 辰: '진', 巳: '사', 午: '오', 未: '미', 申: '신', 酉: '유', 戌: '술', 亥: '해' }
@@ -163,103 +132,7 @@ function buildWarningReason(day: ReturnType<typeof buildDateAnalysis>['warnings'
 }
 
 export default function DateRecommendations(props: Props) {
-  const [isUnlocked, setIsUnlocked] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
-  const [toastType, setToastType] = useState<'info' | 'success'>('info')
   const analysis = useMemo(() => buildDateAnalysis(props), [props])
-  const kakaoShareText = useMemo(() => buildKakaoShareText(props, analysis), [props, analysis])
-
-  const calculationKey = `${props.year}-${props.month}-${props.origin}-${props.destination}-${props.members.map((member) => `${member.id}:${member.birth}:${member.calendar}`).join('|')}`
-
-  useEffect(() => {
-    setIsUnlocked(false)
-    try {
-      window.localStorage.removeItem('moving-lab-report-unlocked')
-    } catch {
-      // Storage is optional; the report remains locked in component state.
-    }
-  }, [calculationKey])
-
-  useEffect(() => {
-    const ensureKakao = () => {
-      if (typeof window === 'undefined' || !window.Kakao) return false
-      if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
-      return true
-    }
-    if (ensureKakao()) return
-    const interval = window.setInterval(() => { if (ensureKakao()) window.clearInterval(interval) }, 300)
-    const timeout = window.setTimeout(() => window.clearInterval(interval), 6000)
-    return () => { window.clearInterval(interval); window.clearTimeout(timeout) }
-  }, [])
-
-  const showToast = (message: string, type: 'info' | 'success' = 'info') => {
-    setToastType(type)
-    setToastMessage(message)
-  }
-
-  useEffect(() => {
-    if (!toastMessage) return
-    const timeout = window.setTimeout(() => setToastMessage(''), 4200)
-    return () => window.clearTimeout(timeout)
-  }, [toastMessage])
-
-  const unlockReport = () => {
-    setIsUnlocked(true)
-    try {
-      window.localStorage.setItem('moving-lab-report-unlocked', 'true')
-    } catch {
-      // Storage is optional; the report unlocks in component state.
-    }
-  }
-
-  const fallbackClipboardUnlock = async () => {
-    try {
-      await navigator.clipboard.writeText(kakaoShareText)
-    } catch {
-      // Clipboard API can fail on insecure origins; proceed to unlock regardless.
-    }
-    unlockReport()
-    showToast('✅ 가족 단톡방에 보낼 추천 날짜가 복사되었습니다! 카톡에 붙여넣어 공유해보세요. (리포트 잠금 해제됨)', 'success')
-  }
-
-  const shareWithKakao = async () => {
-    // 1) Mobile: prefer native Web Share API to avoid any Kakao domain popup errors.
-    const supportsNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
-    if (supportsNativeShare) {
-      try {
-        await navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: SHARE_LINK })
-        unlockReport()
-        return
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return
-        // Native share failed for another reason — fall through to Kakao SDK.
-      }
-    }
-
-    // 2) Try Kakao SDK (PC + mobile where native share is unavailable).
-    if (typeof window !== 'undefined' && window.Kakao) {
-      try {
-        if (!window.Kakao.isInitialized()) window.Kakao.init(KAKAO_JS_KEY)
-        window.Kakao.Share.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: SHARE_TITLE,
-            description: KAKAO_SHARE_DESCRIPTION,
-            imageUrl: SHARE_IMAGE,
-            link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK },
-          },
-          buttons: [{ title: '이사 길일 분석 보기', link: { webUrl: SHARE_LINK, mobileWebUrl: SHARE_LINK } }],
-        })
-        unlockReport()
-        return
-      } catch {
-        // Kakao SDK failed (4019 domain auth, blocked popup, etc.) — fail-safe below.
-      }
-    }
-
-    // 3) Fail-safe: copy summary to clipboard, unlock, show success toast.
-    await fallbackClipboardUnlock()
-  }
 
   return <section className={styles.recommendations} aria-label="추천 날짜 상세 분석">
     <div className={styles.sectionHeading}><div><span className={styles.overline}>FAMILY DATE REPORT</span><h3>우리 가족 맞춤 추천 날짜</h3><p>양·음력 날짜와 가족 생년 띠, 이동 방향을 기준으로 살펴봤어요.</p></div><div className={styles.headingActions}><span className={styles.methodBadge}>간이 참고 점수</span></div></div>
@@ -282,7 +155,7 @@ export default function DateRecommendations(props: Props) {
           <div className={styles.pillTags}><span><Check size={13} />{day.handless ? '손없는날' : day.isWeekend ? '주말 일정' : '평일 절약일'}</span><span><Check size={13} />{familyNoConflict ? '가족 사주 조화' : '가족 사주 확인'}</span><span className={analysis.movingSafe ? '' : styles.cautionTag}><Check size={13} />{analysis.movingSafe ? `이동 방위(${directionLabel}) 안전` : '이동 방위 확인 필요'}</span></div>
           <p className={styles.teaserSummary}>{narrative}</p>
           <div className={styles.detailFrame}>
-            <div className={`${styles.detailedContent} ${!isUnlocked ? styles.locked : ''}`} aria-hidden={!isUnlocked} inert={!isUnlocked}>
+            <div className={styles.detailedContent}>
               <ul className={styles.reasons}>
                 <li><span className={styles.reasonLabel}>길일 참고</span><span>{day.handless ? `음력 ${day.lunarMonth}월 ${day.lunarDay}일로 손없는날 기준에 해당해요.` : `음력 ${day.lunarMonth}월 ${day.lunarDay}일은 손없는날 기준에 해당하지 않아요.`} {getCostReason(day)}</span></li>
                 <li><span className={styles.reasonLabel}>가족 일진</span><span>{familyNoConflict ? `입력한 가족 ${analysis.family.length}명과 이날 일진(${day.dayBranch}) 사이에는 전통적인 충 관계가 확인되지 않았어요.` : `이날 일진(${day.dayBranch})과 충 관계가 확인된 가족이 ${day.conflicts.length}명 있어요.`}</span></li>
@@ -296,27 +169,16 @@ export default function DateRecommendations(props: Props) {
                 })}</div>
               </details>
             </div>
-            {!isUnlocked && <div className={styles.cardUnlockOverlay}><button type="button" className={styles.cardUnlockButton} onClick={shareWithKakao}><MessageCircle size={17} />카카오톡 공유하고 상세 분석 보기</button></div>}
           </div>
         </article>
       })}
     </div>
-
-    {!isUnlocked && <div className={styles.unlockArea}>
-      <div className={styles.blurredPreview} aria-hidden="true"><span>가족별 일진 궁합 · 길일 풀이 · 이동 방향 세부 분석</span><span>흉일 캘린더 · 비용 절약 메모</span></div>
-      <div className={styles.unlockBanner}><span className={styles.lockIcon}><LockKeyhole size={22} /></span><div className={styles.unlockCopy}><h4>우리 가족 맞춤 상세 사주 풀이 &amp; 흉일 캘린더</h4><p>카카오톡으로 가족에게 공유하면 상세 풀이를 무료로 확인할 수 있어요. 모바일에서는 기기 공유 창이, PC에서는 안전한 복사 방식으로 작동해요.</p></div><button type="button" onClick={shareWithKakao} className={styles.shareButton}><MessageCircle size={18} />카카오톡으로 가족에게 공유하고 무료 확인하기<ArrowUpRight size={16} /></button></div>
-    </div>}
-
-    {isUnlocked && <div className={styles.unlockedNotice} role="status"><Check size={17} /> 상세 리포트가 열렸어요. 가족별 분석과 주의 날짜를 확인해 보세요.</div>}
 
     <div className={styles.warningBox}><div className={styles.warningHeading}><span className={styles.warningIcon}>!</span><div><b>일정 선택 전 한 번 더 확인해 볼 날짜</b><p>가족별 충, 이동 방향, 손없는날과 주말 수요를 조합한 참고 목록이에요.</p></div></div>
       <ul className={styles.warningList}>{analysis.warnings.slice(0, 2).map((day) => <li className={styles.warningRow} key={day.day}><span className={styles.warningBullet} aria-hidden="true" /><div><b>{Number(props.month)}월 {day.day}일 ({weekdayNames[day.weekday]})</b><span>{buildWarningReason(day, props, analysis)}</span></div></li>)}</ul>
       <p className={styles.warningFoot}>날짜 추천은 전통 명리 기준을 단순화한 참고용 결과이며, 과학적 예측이나 전문 택일 상담을 대신하지 않아요.</p>
     </div>
 
-    {isUnlocked && <div className={styles.adPlaceholder} aria-label="광고 배너 자리"><span>광고</span><b>AdSense 배너 자리</b><small>광고가 연결되면 이 영역에 표시됩니다.</small></div>}
-
-    {toastMessage && <div className={`${styles.toast} ${toastType === 'success' ? styles.toastSuccess : ''}`} role="status" aria-live="polite">{toastType === 'success' ? <Check size={16} /> : <Sparkles size={16} />}{toastMessage}</div>}
     <p className={styles.methodNote}><MapPin size={13} /> 손없는날은 음력일 끝자리 9·0으로 계산하고, 방향은 지역 대표 좌표와 해당 연도 방위 기준을 적용해요. 점수는 간이 참고용이며 정통 생기·복덕 택일이나 과학적 예측을 대신하지 않습니다. 가족 정보는 저장하지 않으며, 새 분석을 시작하면 리포트가 다시 잠깁니다.</p>
   </section>
 }
